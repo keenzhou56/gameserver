@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package protocol;
+
+option go_package = "src/im/api/protocol;protocol";
+
+message CommonMsg {
+    int32 code = 1;
+    string msg = 2;
+}
+
+// gm
+message KickUserMsg {
+    int64 kickUserID = 1;
+    string msg = 2;
+}
+
+message KickAllMsg {
+    string msg = 1;
+}
+
+message StatMsg {
+}
+
+message StatMsgReply {
+    int64 startTime = 1;
+    int64 runTime = 2;
+    int32 ConnectCount = 3;       
+	int32 MaxConnectCount = 4;
+	int32 GroupCount = 5;
+	int32 MaxGroupCount = 6;
+	uint64 SysBoradcastMessageCount = 7;
+	int32 SysPrivateMessageCount = 8;
+	int32 SysGroupMessageCount = 9;
+	uint64 BoradcastMessageCount = 10;
+	int32 PrivateMessageCount = 11;
+	int32 GroupMessageCount = 12; 
+	int32 LoginTimes = 13;
+    int32 SvrGoroutineCount = 14;
+}
+
+// user
+message KickUserMsgReply {
+    string msg = 1;
+}
+
+message LoginMsg {
+    int64 userID = 1;
+    string platformID = 2;
+    string PlatformName = 3;
+    int64 loginTime = 4;
+    string loginToken = 5;
+}
+
+message LogoutMsg {
+}
+
+message LoginMsgReply {
+    int32 code = 1;
+    string msg = 2;
+    string lastToken = 3;
+}
+
+message ImApiMsg {
+    string startTime = 1;
+    string msg = 2;
+}
+
+message ImApiMsgReply {
+    int32 code = 1;
+    string startTime = 2;
+    string msg = 3;
+}
+
+message JoinGroupMsg {
+    string groupID = 1;
+    string lastToken = 2;
+}
+
+message QuitGroupMsg {
+    string groupID = 1;
+    string lastToken = 2;
+}
+
+message ChatGroupMsg {
+    string groupID = 1;
+    string lastToken = 2;
+    string msg = 3;
+}
+
+message ChatGroupMsgReply {
+    string groupID = 1;
+    int64 senderId = 2;
+    string senderName = 3;
+    string msg = 4;
+}
+
+message GroupUserList {
+    string groupID = 1;
+}
+
+message GroupUserMsg {
+    int64 userID = 1;
+    string platformID = 2;
+    string PlatformName = 3;
+}
+
+message GroupUserListReply {
+    repeated GroupUserMsg userList = 1;
+}
+
+message ChatPrivateMsg {
+    int64 receiverId = 1;
+    string lastToken = 2;
+    string msg = 3;
+}
+
+message ChatPrivateReply {
+    int64 senderId = 1;
+    string senderName = 2;
+    string msg = 3;
+}
+
+message ChatBoradcastMsg {
+    string lastToken = 2;
+    string msg = 3;
+}
+
+message ChatBoradcastMsgReply {
+    int64 senderId = 1;
+    string senderName = 2;
+    string msg = 3;
+}
+
+message UserMsg {
+    int64 userID = 1;
+}
+
+message UserMsgReply {
+    int64 userID = 1;
+    string platformID = 2;
+    string PlatformName = 3;
+    bool closed = 4;
+    bool gmFlag = 5;
+}

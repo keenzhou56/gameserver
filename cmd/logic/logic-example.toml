@@ -1,0 +1,51 @@
+# This is a TOML document. Boom
+[TCPServer]
+    network ="tcp"
+    addr = ":8899"
+    debug = false
+    systemKey = "XXOOOOXX"
+    loginKey = "OOXXXXOO"
+    chatKey = "OOXXOOXX"
+
+[kafka]
+    topic = "goim-push-topic"
+    brokers = ["127.0.0.1:9092"]
+
+[redis]
+    network = "tcp"
+    addr = "10.23.25.245:6379"
+    active = 60000
+    idle = 1024
+    dialTimeout = "200ms"
+    readTimeout = "500ms"
+    writeTimeout = "500ms"
+    idleTimeout = "120s"
+    expire = "30m"
+    auth = "SpH4G5Dc6v8In3uj"
+
+[whitelist]
+    whitelist = [123]
+    whiteLog  = "/tmp/white_list.log"
+
+[bucket]
+    size = 32
+    channel = 1024
+    group = 1024
+    routineAmount = 32
+    routineSize = 1024
+
+[httpServer]
+    network = "tcp"
+    addr = ":3111"
+	readTimeout = "1s"
+	writeTimeout = "1s"
+
+[rpcServer]
+    network = "tcp"
+    addr = ":3119"
+    timeout = "1s"
+
+[rpcClient]
+    dial = "1s"
+    timeout = "1s"
+    srvAddr = ":3119"
