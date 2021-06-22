@@ -1,0 +1,29 @@
+{
+    "LogLevel": "debug",
+    "LogPath": "/data/app/log/gameserver",
+    "WSAddr": "0.0.0.0:23560",
+    "CertFile": "",
+    "KeyFile": "",
+    "TCPAddr": "0.0.0.0:23526",
+    "MaxConnNum": 20000,
+    "ConsolePort": 8012,
+    "ProfilePath": "",
+    "DBPlayerInstance" : [
+        "127.0.0.1"
+    ],
+    "DBPwd" : "",
+    "DBUser" : "root",
+    "DBDNS" : {
+        "DBMain" : 0,
+        "DBUser0" : 0,
+        "DBUser1" : 0,
+        "DBUser2" : 0,
+        "DBUser3" : 0,
+        "DBUser4" : 0,
+        "DBUser5" : 0,
+        "DBUser6" : 0,
+        "DBUser7" : 0,
+        "DBUser8" : 0,
+        "DBUser9" : 0
+    }
+}

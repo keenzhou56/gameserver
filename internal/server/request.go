@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Context struct {
+type Request struct {
 	user        *User
 	conn        *net.TCPConn
 	messageType uint16
@@ -14,29 +14,28 @@ type Context struct {
 	startTime   int64
 }
 
-// NewUser 生成新用户
-func NewContext() *Context {
-	ctx := new(Context)
+func NewRequest() *Request {
+	ctx := new(Request)
 	ctx.startTime = time.Now().UnixNano()
 	return ctx
 }
 
-func (ctx *Context) GetBody() []byte {
+func (ctx *Request) GetBody() []byte {
 	return ctx.body
 }
 
-func (ctx *Context) GetConn() *net.TCPConn {
+func (ctx *Request) GetConn() *net.TCPConn {
 	return ctx.conn
 }
 
-func (ctx *Context) GetMessageType() uint16 {
+func (ctx *Request) GetMessageType() uint16 {
 	return ctx.messageType
 }
 
-func (ctx *Context) GetFromType() uint16 {
+func (ctx *Request) GetFromType() uint16 {
 	return ctx.fromType
 }
 
-func (ctx *Context) GetUser() *User {
+func (ctx *Request) GetUser() *User {
 	return ctx.user
 }

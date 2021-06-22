@@ -4,6 +4,8 @@ import (
 	"flag"
 	"gameserver/internal/server"
 	"gameserver/internal/server/conf"
+	"gameserver/internal/server/models/mdb"
+	"gameserver/internal/server/mysql"
 	"gameserver/pkg/common"
 	"gameserver/pkg/log"
 	"gameserver/pkg/log/stdlog"
@@ -26,6 +28,8 @@ func main() {
 	if err := conf.Init(); err != nil {
 		panic(err)
 	}
+	conf.InitJson()
+	mdb.MDB = mysql.GetDBMain()
 
 	logFile, logErr := os.OpenFile(*logFileName, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if logErr != nil {
@@ -60,6 +64,17 @@ func main() {
 	if err := server.InitTCP(tcpSrv, conf.Conf.TCPServer.Addr, runtime.NumCPU()); err != nil {
 		panic(err)
 	}
+
+	// xLogic := logic.New(conf.Conf)
+	// // xLogic.Ping(ctx)
+	// err := xLogic.Pub("mdb", "xx")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
+	// xLogic.Ping(ctx)
+
 	// // logic server
 	// logicSrv := logic.New(conf.Conf)
 	// // grpc server

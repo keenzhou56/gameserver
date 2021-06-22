@@ -58,3 +58,14 @@ func (l *Logic) Test(c context.Context) (err error) {
 func (l *Logic) Receive(c context.Context, userID int64, proto *pb.Proto) (err error) {
 	return
 }
+
+// Receive receive a message.
+func (l *Logic) Pub(channel, message string) (err error) {
+	_, err = l.dao.Lpush(channel, message)
+	return
+}
+
+func (l *Logic) Sub(channel string) (msg string, err error) {
+	msg, err = l.dao.Brpop(channel)
+	return
+}

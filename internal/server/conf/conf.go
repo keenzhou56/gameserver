@@ -11,6 +11,13 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const (
+	// 定义当前服务器
+	// dev: dev服
+	DevOpen           = "dev"
+	DB10TABLE100 bool = false // 分库分表开启设置
+)
+
 var (
 	confPath  string
 	deployEnv string

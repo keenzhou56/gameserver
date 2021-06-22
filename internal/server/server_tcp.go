@@ -2,9 +2,16 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"gameserver/internal/server/conf"
+	"gameserver/internal/server/logic"
+	"gameserver/internal/server/mysql"
 	"gameserver/pkg/common"
+	"gameserver/pkg/rate/limit"
+	"math/rand"
 	"net"
+	"strconv"
+	"sync/atomic"
 	"time"
 
 	glog "github.com/golang/glog"
@@ -16,6 +23,7 @@ const (
 
 var receivedAiMsgCount uint64
 var sendedAiMsgCount uint64
+var drop int64
 
 // InitTCP listen all tcp.bind and start accept connections.
 func InitTCP(s *Server, bind string, accept int) (err error) {
@@ -38,6 +46,8 @@ func InitTCP(s *Server, bind string, accept int) (err error) {
 		go acceptTCP(s, listener)
 	}
 	go s.broadcaster()
+	go s.CommitMdb()
+	// go s.RedisPub()
 	return
 }
 
@@ -58,6 +68,7 @@ func acceptTCP(s *Server, lis *net.TCPListener) {
 			return
 		}
 		go s.dispatchTCP(conn)
+
 		// if r++; r == maxInt {
 		// 	r = 0
 		// }
@@ -68,6 +79,18 @@ func acceptTCP(s *Server, lis *net.TCPListener) {
 // for each incoming connection.  dispatch blocks; the caller typically
 // invokes it in a go statement.
 func (s *Server) dispatchTCP(conn *net.TCPConn) {
+
+	// bbr 限流
+	f, err := s.LimitBbr.Get("dispatchTCP").Allow(context.TODO())
+	if err != nil {
+		glog.Errorf("bbr_dispatchTCP.error(%v)", err)
+		return
+	} else {
+		count := rand.Intn(100)
+		time.Sleep(time.Millisecond * time.Duration(count))
+		f(limit.DoneInfo{Op: limit.Success})
+	}
+
 	// 当前连接的用户id
 	user := NewUser()
 	defer func() {
@@ -154,6 +177,62 @@ func (s *Server) broadcaster() {
 			}
 
 			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
+func (s *Server) RedisPub() {
+	// mdb := mysql.GetDBMain()
+	// ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
+	xLogic := logic.New(s.c)
+	for {
+		select {
+		case sql := <-s.mdbMq:
+			glog.Info(sql)
+			// mdb.Exec(sql)
+
+			err := xLogic.Pub("mdb", sql)
+			if err != nil {
+				glog.Errorf("redis publish %v", err)
+			}
+		}
+	}
+}
+
+func (s *Server) CommitMdb() {
+	str := ""
+	for i := 1; i <= 999; i++ {
+		if i < 10 {
+			str = "00" + strconv.FormatUint(uint64(i), 10)
+		} else if i < 100 {
+			str = "0" + strconv.FormatUint(uint64(i), 10)
+		} else {
+			str = strconv.FormatUint(uint64(i), 10)
+		}
+		go s.commit(str)
+	}
+	go s.commit("000")
+}
+
+func (s *Server) commit(str string) {
+	mdb := mysql.GetDBMain()
+	xLogic := logic.New(s.c)
+	for {
+		sql, err := xLogic.Sub("mdb_" + str)
+		if err != nil || sql == "" {
+			// glog.Errorf("redis_sub_err: %v, %s", err, "mdb_"+str)
+			time.Sleep(time.Second * 10)
+			continue
+		}
+		tx := mdb.Exec(sql)
+		if tx.Error != nil {
+			glog.Errorf("mdb_sql: %s , exec_err:%s", sql, tx.Error.Error())
+			continue
+		}
+		idx := atomic.AddUint64(&mysqlUpdateCount, 1)
+		if idx%100 == 0 {
+			fmt.Println("["+common.GetTimestamp()+"]:mysqlUpdateCount:", idx)
 		}
 	}
 }

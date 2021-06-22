@@ -259,5 +259,6 @@ func Substr(str string, start, length int) string {
 func GetToken(encryptKey string, userID int64, time int64) string {
 	tokenStr := fmt.Sprintf("%s#%d#%d", encryptKey, userID, time)
 	md5Str := GetMd5String(tokenStr)
-	return Substr(md5Str, 0, 4)
+	return md5Str
+	// return Substr(md5Str, 0, 4)
 }

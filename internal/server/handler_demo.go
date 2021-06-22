@@ -1,7 +1,7 @@
 package server
 
 // conn *net.TCPConn, user *User, messageType, fromType uint16, body []byte
-func (srv *Server) DemoHandler(ctx *Context) (int, error) {
+func (srv *Server) DemoHandler(ctx *Request) (int, error) {
 
 	return 0, nil
 }

@@ -19,7 +19,7 @@ func (s *Server) HandlerGmBefore(imType, fromType uint16, userID, gmTime int64, 
 	return 0, nil
 }
 
-func (srv *Server) KickUserHandler(ctx *Context) (int, error) {
+func (srv *Server) KickUserHandler(ctx *Request) (int, error) {
 
 	body := new(pb.KickUserMsg)
 	err := proto.Unmarshal(ctx.body, body)
@@ -48,7 +48,7 @@ func (srv *Server) KickUserHandler(ctx *Context) (int, error) {
 	return 0, err
 }
 
-func (srv *Server) KickAllHandler(ctx *Context) (int, error) {
+func (srv *Server) KickAllHandler(ctx *Request) (int, error) {
 
 	body := new(pb.KickAllMsg)
 	err := proto.Unmarshal(ctx.body, body)
@@ -67,7 +67,7 @@ func (srv *Server) KickAllHandler(ctx *Context) (int, error) {
 	return 0, err
 }
 
-func (srv *Server) StatHandler(ctx *Context) (int, error) {
+func (srv *Server) StatHandler(ctx *Request) (int, error) {
 
 	var statInfo = srv.stat.Get()
 	body := new(pb.StatMsgReply)
@@ -100,7 +100,7 @@ func (srv *Server) StatHandler(ctx *Context) (int, error) {
 	return 0, err
 }
 
-func (srv *Server) GetUserHandler(ctx *Context) (int, error) {
+func (srv *Server) GetUserHandler(ctx *Request) (int, error) {
 
 	body := new(pb.UserMsg)
 	err := proto.Unmarshal(ctx.body, body)

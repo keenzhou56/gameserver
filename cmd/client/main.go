@@ -21,7 +21,7 @@ import (
 
 // url参数
 var (
-	file = flag.String("f", "D:\\go_project\\src\\im\\cmd\\server\\127.0.0.1_8899.conf", "conf file")
+	file = flag.String("f", "D:\\go_project\\src\\gameserver\\cmd\\server\\127.0.0.1_8899.conf", "conf file")
 )
 
 var (

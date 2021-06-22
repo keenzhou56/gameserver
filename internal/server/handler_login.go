@@ -4,15 +4,18 @@ import (
 	"errors"
 	"fmt"
 	pb "gameserver/api/protocol"
+	"gameserver/internal/server/models/udb"
+	"gameserver/internal/server/service"
 	"gameserver/pkg/common"
 	"gameserver/pkg/config"
 	"gameserver/pkg/protocal"
 	"net"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 )
 
-func (srv *Server) LoginHandler(ctx *Context) (int, error) {
+func (srv *Server) LoginHandler(ctx *Request) (int, error) {
 	code, err := srv.LoginService(ctx.conn, ctx.user, ctx.body)
 	loginMsgReply := new(pb.LoginMsgReply)
 	if err != nil {
@@ -58,6 +61,27 @@ func (srv *Server) LoginService(conn *net.TCPConn, newUser *User, body []byte) (
 		platformName = "user" + platformID
 	}
 	// TODO 验证loginToken 可以http,或者直接读取redis数据
+	player_id := uint64(0)
+	userIDStr := strconv.FormatInt(loginUserID, 10)
+	m_player, err := service.GetUserService().GetPlayerID(userIDStr, 1)
+	if err != nil {
+		return 0, err
+	}
+
+	if m_player == nil {
+		player_id, err = service.GetUserService().RegData(userIDStr, 1)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		player_id = m_player.PlayerID
+	}
+
+	if player_id < 1 {
+		fmt.Println("palyer_id_error:", userIDStr)
+		return 0, errors.New("palyer_id_error")
+	}
+
 	loginToken := LoginMsg.GetLoginToken()
 	// 用户登入验证
 	if loginToken != srv.getLoginToken(loginUserID, loginTime) {
@@ -79,6 +103,7 @@ func (srv *Server) LoginService(conn *net.TCPConn, newUser *User, body []byte) (
 		// 给已经连接的用户发送被顶下线的消息
 		protocal.SendError(user.Conn, config.ImErrorCodeRelogin, "other login")
 		// 关闭连接
+		user.Closed = true
 		user.Conn.Close()
 		// 删除被踢用户
 		srv.GetBucket().DelUser(loginUserID)
@@ -91,6 +116,13 @@ func (srv *Server) LoginService(conn *net.TCPConn, newUser *User, body []byte) (
 	user.Conn = conn
 	user.LastToken = srv.generateToken(loginUserID)
 	srv.GetBucket().AddUser(user)
+
+	user.PlayerID = player_id
+	user.PlayerData = &udb.UserData{}
+	err = user.PlayerData.InitUserData(user.PlayerID)
+	if err != nil {
+		return 0, err
+	}
 
 	go user.SendMessage()
 

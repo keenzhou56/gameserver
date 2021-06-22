@@ -4,10 +4,12 @@ import (
 	"context"
 	"gameserver/api/logic"
 	"gameserver/internal/server/conf"
+	xLogic "gameserver/internal/server/logic"
 	"gameserver/pkg/config"
 	"gameserver/pkg/json"
 	"gameserver/pkg/log"
 	"gameserver/pkg/protocal"
+	"gameserver/pkg/rate/limit/bbr"
 	"time"
 
 	"google.golang.org/grpc"
@@ -39,6 +41,9 @@ type Server struct {
 	log       *log.Helper
 	router    *HandlersChain
 	rpcClient logic.LogicClient
+	xLogic    *xLogic.Logic
+	mdbMq     chan string
+	LimitBbr  *bbr.Group
 }
 
 func newLogicClient(c *conf.RPCClient) logic.LogicClient {
@@ -77,6 +82,22 @@ func NewServer(c *conf.Config) *Server {
 	s.mapGroup = NewGroups()
 	s.stat = NewStat()
 	s.rpcClient = newLogicClient(c.RPCClient)
+	s.mdbMq = make(chan string, 1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s.xLogic = xLogic.New(s.c)
+	err := s.xLogic.Ping(ctx)
+	if err != nil {
+		panic(err)
+	}
+	// 
+	cfg := &bbr.Config{
+		Window:       time.Second * 10,
+		WinBucket:    100,
+		CPUThreshold: 800,
+	}
+	s.LimitBbr = bbr.NewGroup(cfg)
 
 	go s.onlineproc()
 	return s

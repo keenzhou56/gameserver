@@ -16,7 +16,6 @@ type Bucket struct {
 	mapUser   sync.Map
 	Online    int32
 	MaxOnLine int32
-	Groups    *Groups
 }
 
 // InitBucket ...

@@ -297,3 +297,32 @@ func (d *Dao) GetUserOnline(c context.Context) (online uint64, err error) {
 	conn.Close()
 	return
 }
+
+// Lpush  message to channel.
+func (d *Dao) Lpush(channel, message string) (int, error) {
+	c := d.redis.Get()
+	defer c.Close()
+	n, err := redis.Int(c.Do("lpush", channel, message))
+	if err != nil {
+		return 0, fmt.Errorf("redis publish %s %s, err: %v", channel, message, err)
+	}
+	return n, nil
+}
+
+// Brpop  message from channel.
+func (d *Dao) Brpop(channel string) (data string, err error) {
+	c := d.redis.Get()
+	defer c.Close()
+	nameAndData, err := redis.Strings(c.Do("brpop", channel, 1))
+	if err != nil {
+		if err == redis.ErrNil {
+			err = nil
+			return
+		}
+		return
+	}
+	if len(nameAndData) > 1 {
+		data = nameAndData[1]
+	}
+	return
+}

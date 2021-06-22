@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func (srv *Server) JoinGroupHandler(ctx *Context) (int, error) {
+func (srv *Server) JoinGroupHandler(ctx *Request) (int, error) {
 	msg := new(pb.JoinGroupMsg)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
 	if err != nil {
@@ -31,7 +31,7 @@ func (srv *Server) JoinGroupHandler(ctx *Context) (int, error) {
 	return config.ImResponseCodeSuccess, nil
 }
 
-func (srv *Server) QuitGroupHandler(ctx *Context) (int, error) {
+func (srv *Server) QuitGroupHandler(ctx *Request) (int, error) {
 	msg := new(pb.QuitGroupMsg)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
 	if err != nil {
@@ -60,7 +60,7 @@ func (srv *Server) QuitGroupHandler(ctx *Context) (int, error) {
 	return config.ImResponseCodeSuccess, nil
 }
 
-func (srv *Server) GroupUserHandler(ctx *Context) (int, error) {
+func (srv *Server) GroupUserHandler(ctx *Request) (int, error) {
 	msg := new(pb.GroupUserList)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
 	if err != nil {

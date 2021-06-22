@@ -2,6 +2,7 @@ package config
 
 // 消息头预定义常量
 const (
+	LenStackBuf = 4096
 	// 自定义信息长度限制
 	ImRegisterExtInfoLengthLimt = 1048
 

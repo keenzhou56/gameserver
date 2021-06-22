@@ -1,6 +1,8 @@
 package server
 
 import (
+	"errors"
+	"gameserver/internal/server/models/udb"
 	"gameserver/pkg/common"
 	"gameserver/pkg/config"
 	"gameserver/pkg/protocal"
@@ -9,12 +11,16 @@ import (
 	"net"
 	"reflect"
 	"runtime"
+	"sync"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // User 用户信息
 type User struct {
 	UserID         int64
+	serverID       uint32
 	PlatformID     string
 	PlatformName   string
 	GroupIDs       map[string]string
@@ -30,6 +36,9 @@ type User struct {
 	GmFlag         bool
 	// ctx            context.Context
 	// cancel         context.CancelFunc
+	DBInstance sync.Map
+	PlayerID   uint64
+	PlayerData *udb.UserData
 }
 
 // UserList ...
@@ -45,6 +54,7 @@ func NewUser() *User {
 	user.Closed = false
 	user.UserID = 0
 	user.GmFlag = false
+	user.PlayerID = 0
 	return user
 }
 
@@ -102,6 +112,11 @@ func (user *User) RandServerHearbeat() time.Duration {
 }
 
 func (user *User) readLoop(conn *net.TCPConn) error {
+	var (
+		count    int64
+		lastTime int64
+	)
+
 	for {
 		// 读取包内容
 		imPacket, err := protocal.ReadPacket(conn)
@@ -118,6 +133,20 @@ func (user *User) readLoop(conn *net.TCPConn) error {
 		}
 		user.inChan <- imPacket
 		user.LastHbTime = time.Now()
+
+		// 固定窗口算法Fixed window
+		nowTime := time.Now().Unix()
+		diffTime := nowTime - lastTime
+		if diffTime == 0 {
+			count++
+			if count > 5 {
+				return errors.New("单用户限流 5 qps")
+			}
+		} else if diffTime >= 1 {
+			count = 1
+			lastTime = nowTime
+		}
+
 	}
 }
 
@@ -136,6 +165,8 @@ func (user *User) handleLoop(srv *Server, conn *net.TCPConn) {
 			// 心跳包处理
 			if messageType == config.ImHeartbeat {
 				user.LastHbTime = time.Now()
+				// TODO
+				// 返回系统时间
 				continue
 			}
 			// 退出处理
@@ -169,23 +200,35 @@ func (user *User) handleLoop(srv *Server, conn *net.TCPConn) {
 				protocal.SendError(conn, config.ImErrorCodeNotAllowedImType, "Unknown messageType")
 				goto handleLoopQuit
 			}
-			ctx := NewContext()
-			ctx.user = user
-			ctx.conn = conn
-			ctx.messageType = messageType
-			ctx.fromType = fromType
-			ctx.body = imPacket.GetBody()
+			req := NewRequest()
+			req.user = user
+			req.conn = conn
+			req.messageType = messageType
+			req.fromType = fromType
+			req.body = imPacket.GetBody()
 			in := make([]reflect.Value, 1)
-			in[0] = reflect.ValueOf(ctx)
+			in[0] = reflect.ValueOf(req)
 			values := reflect.ValueOf(srv).MethodByName(handlerFuncName).Call(in)
 			// 返回结果为数组，[int, error]
 			errCode := values[0].Interface().(int)
 			if values[1].Interface() != nil || errCode != 0 {
+
+				user.DBRollBack() // 出错回滚
+
 				errMsg := values[1].Interface().(error).Error()
 				common.Println(handlerFuncName, "error:", errMsg, "errcode:", errCode, "userID:", user.UserID)
 				protocal.SendError(conn, errCode, errMsg)
 				goto handleLoopQuit
 			}
+
+			// 更新列表提交
+			if err := user.PlayerData.Render(); err != nil {
+				common.Println("user.PlayerData.Render", "error:", err.Error(), "userID:", user.UserID)
+				goto handleLoopQuit
+			}
+
+			// user.DBCommit() // 事务提交
+			// 日志提交
 
 		}
 	}
@@ -199,4 +242,39 @@ func (user *User) ImQuitUserMqPacket() *protocal.ImPacket {
 	bodyBytes := []byte("")
 	imPacket := protocal.NewImPacket(headerBytes, bodyBytes)
 	return imPacket
+}
+
+// AddUser ...
+func (user *User) AddMDB(db *gorm.DB) error {
+	if user.UserID <= 0 {
+		return errors.New("Bucket.AddUser :User.UserId must larger than 0")
+	}
+	user.DBInstance.Store("mdb", db)
+	return nil
+}
+
+func (user *User) AddUDB(db *gorm.DB) error {
+	if user.UserID <= 0 {
+		return errors.New("Bucket.AddUser :User.UserId must larger than 0")
+	}
+	user.DBInstance.Store("udb", db)
+	return nil
+}
+
+func (user *User) DBRollBack() {
+	user.DBInstance.Range(func(key, value interface{}) bool {
+		if value.(*gorm.DB) != nil {
+			value.(*gorm.DB).Rollback()
+		}
+		return true
+	})
+}
+
+func (user *User) DBCommit() {
+	user.DBInstance.Range(func(key, value interface{}) bool {
+		if value.(*gorm.DB) != nil {
+			value.(*gorm.DB).Commit()
+		}
+		return true
+	})
 }

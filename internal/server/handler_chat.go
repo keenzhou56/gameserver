@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func (srv *Server) ChatGroupHandler(ctx *Context) (int, error) {
+func (srv *Server) ChatGroupHandler(ctx *Request) (int, error) {
 
 	msg := new(pb.ChatGroupMsg)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
@@ -45,7 +45,7 @@ func (srv *Server) ChatGroupHandler(ctx *Context) (int, error) {
 	return config.ImResponseCodeSuccess, nil
 }
 
-func (srv *Server) ChatPrivateHandler(ctx *Context) (int, error) {
+func (srv *Server) ChatPrivateHandler(ctx *Request) (int, error) {
 	// 读取接收者信息
 	msg := new(pb.ChatPrivateMsg)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
@@ -77,7 +77,7 @@ func (srv *Server) ChatPrivateHandler(ctx *Context) (int, error) {
 	return config.ImResponseCodeSuccess, nil
 }
 
-func (srv *Server) ChatBoradcastHandler(ctx *Context) (int, error) {
+func (srv *Server) ChatBoradcastHandler(ctx *Request) (int, error) {
 	// 读取接收者信息
 	msg := new(pb.ChatBoradcastMsg)
 	err := proto.Unmarshal(ctx.GetBody(), msg)
