@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"gameserver/internal/server/conf"
-	"log"
+	stdlog "log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -35,11 +35,11 @@ func openDB(user string, pwd string, host string, port string, dbname string) (*
 	//buffer.WriteString("?charset=utf8mb4&parseTime=true&loc=Asia/Shanghai") // loc 统一时区
 
 	dsn := buffer.String()
-	glog.Infof("dsn: %s", dsn)
+	log.Infof("dsn: %s", dsn)
 	// dsn := "user:pass@tcp(localhost:9910)/dbname?charset==utf8mb4&parseTime=True&loc=Local"
 
 	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		stdlog.New(os.Stdout, "\r\n", stdlog.LstdFlags), // io writer
 		logger.Config{
 			SlowThreshold:             200 * time.Millisecond, // Slow SQL threshold  default: 200 * time.Millisecond, time.Second
 			LogLevel:                  logger.Error,           // Log level
@@ -58,7 +58,7 @@ func openDB(user string, pwd string, host string, port string, dbname string) (*
 	// 设置全局表名禁用复数
 	// sqlDB.SingularTable(true)
 	sqlDB.SetMaxIdleConns(1)
-	sqlDB.SetMaxOpenConns(3000)
+	sqlDB.SetMaxOpenConns(5001)
 	sqlDB.SetConnMaxLifetime(-1) // 根据mysql服务器的超时时间设置 SHOW VARIABLES LIKE '%timeout%';
 
 	// db.Use(prometheus.New(prometheus.Config{

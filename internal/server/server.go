@@ -7,7 +7,6 @@ import (
 	xLogic "gameserver/internal/server/logic"
 	"gameserver/pkg/config"
 	"gameserver/pkg/json"
-	"gameserver/pkg/log"
 	"gameserver/pkg/protocal"
 	"gameserver/pkg/rate/limit/bbr"
 	"time"
@@ -32,13 +31,13 @@ const (
 
 // Server is comet server.
 type Server struct {
-	c         *conf.Config
-	bucket    *Bucket
-	mapGroup  *Groups
-	serverID  string
-	globalMq  chan *protocal.ImPacket
-	stat      *Stat
-	log       *log.Helper
+	c        *conf.Config
+	bucket   *Bucket
+	mapGroup *Groups
+	serverID string
+	globalMq chan *protocal.ImPacket
+	stat     *Stat
+	// log       *log.Helper
 	router    *HandlersChain
 	rpcClient logic.LogicClient
 	xLogic    *xLogic.Logic
@@ -91,7 +90,7 @@ func NewServer(c *conf.Config) *Server {
 	if err != nil {
 		panic(err)
 	}
-	// 
+	//
 	cfg := &bbr.Config{
 		Window:       time.Second * 10,
 		WinBucket:    100,
@@ -127,7 +126,7 @@ func (s *Server) onlineproc() {
 		case <-time.After(time.Second * 10):
 			// xLogic := logic.New(s.c)
 			// if err := xLogic.Ping(ctx); err != nil {
-			// 	common.Println("xLogic.Ping, err:", err.Error())
+			// 	log.Errorln("xLogic.Ping, err:", err.Error())
 			// 	continue
 			// }
 			// xLogic.SetUserOnline(ctx, uint64(s.bucket.Online))
@@ -137,9 +136,9 @@ func (s *Server) onlineproc() {
 }
 
 // RegLog ...
-func (s *Server) RegLog(log *log.Helper) {
-	s.log = log
-}
+// func (s *Server) RegLog(log *log.Helper) {
+// 	// s.log = log
+// }
 
 // BroadcastMsg ...
 func (s *Server) BroadcastMsg(msg string) {

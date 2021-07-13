@@ -11,13 +11,17 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.5.2
 	github.com/gomodule/redigo v1.8.4
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible // indirect
+	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.10.0 // indirect
 	github.com/prometheus/common v0.20.0
 	github.com/shirou/gopsutil v3.21.3+incompatible // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/sirupsen/logrus v1.6.0 // indirect
+	github.com/stretchr/testify v1.7.0
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/zhenjl/cityhash v0.0.0-20131128155616-cdd6a94144ab
+	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Shopify/sarama.v1 v1.20.1

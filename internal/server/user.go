@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"gameserver/internal/server/models/udb"
-	"gameserver/pkg/common"
 	"gameserver/pkg/config"
 	"gameserver/pkg/protocal"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -77,7 +77,7 @@ func (user *User) SendMessage() {
 			}
 			_, err := user.Conn.Write(imPacket.Serialize())
 			if err != nil {
-				common.Println("SendMessage conn.Write error:", err.Error(), "userID:", user.UserID)
+				log.Errorln("SendMessage conn.Write error:", err.Error(), "userID:", user.UserID)
 				goto user_quit
 			}
 			user.LastHbTime = time.Now()
@@ -92,7 +92,7 @@ func (user *User) SendMessage() {
 				return
 			}
 			if time.Now().Sub(user.LastHbTime) > serverHeartbeat {
-				common.Println("SendMessage.user.lastHb userId:", user.UserID)
+				log.Errorln("SendMessage.user.lastHb userId:", user.UserID)
 				goto user_quit
 			}
 
@@ -125,7 +125,7 @@ func (user *User) readLoop(conn *net.TCPConn) error {
 				// Error: 解析协议错误
 				protocal.SendError(conn, config.ImErrorCodePacketRead, err.Error())
 			}
-			common.Println("ReadPacket Error:", err)
+			log.Errorln("ReadPacket Error:", err)
 			return err
 		}
 		if user.Closed == true {
@@ -213,19 +213,21 @@ func (user *User) handleLoop(srv *Server, conn *net.TCPConn) {
 			errCode := values[0].Interface().(int)
 			if values[1].Interface() != nil || errCode != 0 {
 
-				user.DBRollBack() // 出错回滚
+				// user.DBRollBack() // 出错回滚
 
 				errMsg := values[1].Interface().(error).Error()
-				common.Println(handlerFuncName, "error:", errMsg, "errcode:", errCode, "userID:", user.UserID)
 				protocal.SendError(conn, errCode, errMsg)
+
+				log.Errorln(handlerFuncName, "error:", errMsg, "errcode:", errCode, "userID:", user.UserID)
+
 				goto handleLoopQuit
 			}
 
 			// 更新列表提交
-			if err := user.PlayerData.Render(); err != nil {
-				common.Println("user.PlayerData.Render", "error:", err.Error(), "userID:", user.UserID)
-				goto handleLoopQuit
-			}
+			// if err := user.PlayerData.Render(); err != nil {
+			// 	log.Errorln("user.PlayerData.Render", "error:", err.Error(), "userID:", user.UserID)
+			// 	goto handleLoopQuit
+			// }
 
 			// user.DBCommit() // 事务提交
 			// 日志提交

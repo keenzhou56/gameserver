@@ -8,8 +8,8 @@ import (
 
 	"gameserver/internal/server/model"
 
-	log "github.com/golang/glog"
 	"github.com/gomodule/redigo/redis"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zhenjl/cityhash"
 )

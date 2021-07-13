@@ -6,20 +6,20 @@ import (
 	pb "gameserver/api/protocol"
 	"gameserver/internal/server/models/udb"
 	"gameserver/internal/server/service"
-	"gameserver/pkg/common"
 	"gameserver/pkg/config"
 	"gameserver/pkg/protocal"
 	"net"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) LoginHandler(ctx *Request) (int, error) {
 	code, err := srv.LoginService(ctx.conn, ctx.user, ctx.body)
 	loginMsgReply := new(pb.LoginMsgReply)
 	if err != nil {
-		common.Println(code, err)
+		log.Errorln(code, err)
 		loginMsgReply.Code = int32(code)
 		loginMsgReply.Msg = err.Error()
 		loginMsgReply.LastToken = ""
@@ -78,7 +78,7 @@ func (srv *Server) LoginService(conn *net.TCPConn, newUser *User, body []byte) (
 	}
 
 	if player_id < 1 {
-		fmt.Println("palyer_id_error:", userIDStr)
+		log.Errorln("palyer_id_error:", userIDStr)
 		return 0, errors.New("palyer_id_error")
 	}
 
@@ -89,7 +89,7 @@ func (srv *Server) LoginService(conn *net.TCPConn, newUser *User, body []byte) (
 		if loginToken != srv.getGmToken(loginUserID, loginTime) {
 			return config.ImErrorCodeLoginTokenNotMatched, errors.New("Error:login token not matched")
 		}
-		// common.Println(loginUserID, loginTime, loginToken, srv.getGmToken(loginUserID, loginTime))
+		// log.Errorln(loginUserID, loginTime, loginToken, srv.getGmToken(loginUserID, loginTime))
 		newUser.GmFlag = true
 	}
 

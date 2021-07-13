@@ -6,8 +6,8 @@ import (
 
 	pb "gameserver/api/logic"
 
-	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
+	log "github.com/sirupsen/logrus"
 	sarama "gopkg.in/Shopify/sarama.v1"
 )
 

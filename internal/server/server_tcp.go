@@ -2,19 +2,16 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"gameserver/internal/server/conf"
 	"gameserver/internal/server/logic"
-	"gameserver/internal/server/mysql"
 	"gameserver/pkg/common"
 	"gameserver/pkg/rate/limit"
 	"math/rand"
 	"net"
 	"strconv"
-	"sync/atomic"
 	"time"
 
-	glog "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -32,14 +29,14 @@ func InitTCP(s *Server, bind string, accept int) (err error) {
 		addr     *net.TCPAddr
 	)
 	if addr, err = net.ResolveTCPAddr("tcp", bind); err != nil {
-		glog.Errorf("net.ResolveTCPAddr(tcp, %s) error(%v)", bind, err)
+		log.Errorf("net.ResolveTCPAddr(tcp, %s) error(%v)", bind, err)
 		return
 	}
 	if listener, err = net.ListenTCP("tcp", addr); err != nil {
-		glog.Errorf("net.ListenTCP(tcp, %s) error(%v)", bind, err)
+		log.Errorf("net.ListenTCP(tcp, %s) error(%v)", bind, err)
 		return
 	}
-	glog.Infof("start tcp listen: %s", bind)
+	log.Infof("start tcp listen: %s", bind)
 	common.Println("start tcp listen:", bind)
 	// split N core accept
 	for i := 0; i < accept; i++ {
@@ -64,7 +61,7 @@ func acceptTCP(s *Server, lis *net.TCPListener) {
 	for {
 		if conn, err = lis.AcceptTCP(); err != nil {
 			// if listener close then return
-			glog.Errorf("listener.Accept(\"%s\") error(%v)", lis.Addr().String(), err)
+			log.Errorf("listener.Accept(\"%s\") error(%v)", lis.Addr().String(), err)
 			return
 		}
 		go s.dispatchTCP(conn)
@@ -83,7 +80,7 @@ func (s *Server) dispatchTCP(conn *net.TCPConn) {
 	// bbr 限流
 	f, err := s.LimitBbr.Get("dispatchTCP").Allow(context.TODO())
 	if err != nil {
-		glog.Errorf("bbr_dispatchTCP.error(%v)", err)
+		log.Errorf("bbr_dispatchTCP.error(%v)", err)
 		return
 	} else {
 		count := rand.Intn(100)
@@ -96,12 +93,12 @@ func (s *Server) dispatchTCP(conn *net.TCPConn) {
 	defer func() {
 		// 捕获异常
 		if err := recover(); err != nil {
-			common.Println("dispatchTCP defer recover error:", err)
+			log.Errorln("dispatchTCP defer recover error:", err)
 		}
 		// 清除用户数据
 		if user.UserID > 0 {
 			s.removeUser(user.UserID, conn)
-			common.Println("dispatchTCP defer conn.close, clientIP:"+conn.RemoteAddr().String(), "userID:", user.UserID)
+			log.Errorln("dispatchTCP defer conn.close, clientIP:"+conn.RemoteAddr().String(), "userID:", user.UserID)
 		}
 		conn.Close()
 		// runtime.Goexit()
@@ -136,7 +133,7 @@ func (s *Server) getGmToken(userID int64, time int64) string {
 func (s *Server) removeUser(userID int64, conn *net.TCPConn) {
 	user, err := s.bucket.GetUser(userID)
 	if err != nil {
-		common.Println(err)
+		log.Errorln(err, "not found use_id:", userID)
 		return
 	}
 	// 如果取得的用户连接，和当前连接不一样，表示已经被重新登录，则直接退出，不处理别的
@@ -155,7 +152,7 @@ func (s *Server) removeUser(userID int64, conn *net.TCPConn) {
 	s.bucket.DelUser(userID)
 
 	if conf.Conf.TCPServer.Debug {
-		common.Println("removeUser disconnected :", userID)
+		log.Debugln("removeUser disconnected :", userID)
 	}
 
 }
@@ -189,12 +186,12 @@ func (s *Server) RedisPub() {
 	for {
 		select {
 		case sql := <-s.mdbMq:
-			glog.Info(sql)
+			log.Info(sql)
 			// mdb.Exec(sql)
 
 			err := xLogic.Pub("mdb", sql)
 			if err != nil {
-				glog.Errorf("redis publish %v", err)
+				log.Errorf("redis publish %v", err)
 			}
 		}
 	}
@@ -216,23 +213,28 @@ func (s *Server) CommitMdb() {
 }
 
 func (s *Server) commit(str string) {
-	mdb := mysql.GetDBMain()
+	// mdb := mysql.GetDBMain()
 	xLogic := logic.New(s.c)
 	for {
 		sql, err := xLogic.Sub("mdb_" + str)
 		if err != nil || sql == "" {
 			// glog.Errorf("redis_sub_err: %v, %s", err, "mdb_"+str)
+			// log.WithFields(log.Fields{"request_id": "123444", "user_ip": "127.0.0.1"}).Info("test")
 			time.Sleep(time.Second * 10)
 			continue
 		}
-		tx := mdb.Exec(sql)
-		if tx.Error != nil {
-			glog.Errorf("mdb_sql: %s , exec_err:%s", sql, tx.Error.Error())
-			continue
-		}
-		idx := atomic.AddUint64(&mysqlUpdateCount, 1)
-		if idx%100 == 0 {
-			fmt.Println("["+common.GetTimestamp()+"]:mysqlUpdateCount:", idx)
-		}
+		// tx := mdb.Exec(sql)
+		// if tx.Error != nil {
+		// 	time.Sleep(time.Second / 100)
+		// 	tx := mdb.Exec(sql)
+		// 	if tx.Error != nil {
+		// 		glog.Errorf("mdb_sql: %s , exec_err:%s", sql, tx.Error.Error())
+		// 		continue
+		// 	}
+		// }
+		// idx := atomic.AddUint64(&mysqlUpdateCount, 1)
+		// if idx%100 == 0 {
+		// 	fmt.Println("["+common.GetTimestamp()+"]:mysqlUpdateCount:", idx)
+		// }
 	}
 }

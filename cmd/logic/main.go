@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	glog "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -21,7 +21,7 @@ func main() {
 	if err := conf.Init(); err != nil {
 		panic(err)
 	}
-	glog.Infof("im-logic [version: %s env: %+v] start", 1, conf.Conf.Env)
+	log.Infof("im-logic [version: %s env: %+v] start", 1, conf.Conf.Env)
 	// logic server
 	logicSrv := logic.New(conf.Conf)
 	// grpc server
@@ -33,10 +33,10 @@ func main() {
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-c
-		glog.Errorf("server get a signal %s", s.String())
+		log.Errorf("server get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			glog.Errorf("server exit")
+			log.Errorf("server exit")
 			logicSrv.Close()
 			// httpSrv.Close()
 			rpcSrv.GracefulStop()

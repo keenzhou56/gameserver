@@ -4,7 +4,7 @@ import (
 	"context"
 	"gameserver/internal/server/model"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 // PushKeys push a message by keys.
